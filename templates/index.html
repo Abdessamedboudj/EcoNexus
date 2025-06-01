@@ -1,0 +1,768 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renewable Energy Optimizer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <style>
+        body { background: #f7f8fa; }
+        .header-logo { font-weight: bold; font-size: 1.3rem; }
+        .energy-option { transition: box-shadow 0.2s; cursor: pointer; }
+        .energy-option:hover { box-shadow: 0 0 0 2px #0d6efd; }
+        .leaflet-container { height: 400px; border-radius: 8px 8px 0 0; }
+        .sidebar-box { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        .map-search-container {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            right: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: #e6f4ea;
+            color: #0f9d58;
+        }
+        .accordion-button:focus {
+            border-color: #0f9d58;
+            box-shadow: 0 0 0 0.25rem rgba(15, 157, 88, 0.25);
+        }
+        .shadow-analysis-container {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .shadow-info {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #666;
+        }
+        .optimal-point {
+            background-color: #4CAF50;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-light bg-white shadow-sm mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand header-logo">
+            <span class="text-primary"></span>
+            EcoNexus
+        </span>
+        <div>
+            <a href="#" class="btn btn-success">Get Started</a>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <div id="map" class="leaflet-container w-100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="sidebar-box p-3 mb-4">
+                <h6>Ready for Assessment</h6>
+                <p class="text-muted mb-2" id="assessment-instruction">Click on the map to select a location for your renewable energy assessment.</p>
+                <div class="bg-success bg-opacity-10 rounded p-2 mb-2 border border-success">
+                    <strong class="text-success">How it works</strong><br>
+                    <ol class="mb-0"><br>
+                        <li><b>Select a location on the map</b></li><br>
+                        <li><b>Choose your preferred renewable energy system</b></li><br>
+                        <li><b>Review the assessment results</b></li><br>
+                        <li><b>Export a detailed report</b></li><br>
+                    </ol>
+                </div>
+                <div id="location-info" class="small text-secondary"></div>
+                <div class="mt-3" id="rectangle-coords-box" style="display:none;">
+                    <label class="form-label">Bottom-Left Lat</label>
+                    <input type="text" id="bl-lat" class="form-control mb-2" readonly>
+                    <label class="form-label">Bottom-Left Lon</label>
+                    <input type="text" id="bl-lon" class="form-control mb-2" readonly>
+                    <label class="form-label">Upper-Right Lat</label>
+                    <input type="text" id="tr-lat" class="form-control mb-2" readonly>
+                    <label class="form-label">Upper-Right Lon</label>
+                    <input type="text" id="tr-lon" class="form-control mb-2" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mb-4" id="energy-selection-card" style="display:none; animation: fadeIn 0.7s;">
+        <div class="card-body">
+            <h5 class="card-title">Energy System Selection</h5>
+            <p class="card-text">Choose the type of renewable energy system you're interested in.<br>
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="solar">
+                        <div class="mb-2"><span class="fs-2">☀️</span></div>
+                        <strong>Solar Panels</strong>
+                        <div class="small text-muted">Harness the sun's energy for clean electricity generation.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="wind">
+                        <div class="mb-2"><span class="fs-2">💨</span></div>
+                        <strong>Wind Turbines</strong>
+                        <div class="small text-muted">Convert wind energy into electrical power.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="hydro">
+                        <div class="mb-2"><span class="fs-2">💧</span></div>
+                        <strong>Hydroelectric</strong>
+                        <div class="small text-muted">Generate electricity from flowing water sources.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="biomass">
+                        <div class="mb-2"><span class="fs-2">🌱</span></div>
+                        <strong>Biomass</strong>
+                        <div class="small text-muted">Convert organic materials into energy.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="geothermal">
+                        <div class="mb-2"><span class="fs-2">🔥</span></div>
+                        <strong>Geothermal</strong>
+                        <div class="small text-muted">Utilize Earth's internal heat for power generation.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white energy-option rounded text-center" data-system="hybrid">
+                        <div class="mb-2"><span class="fs-2">🔀</span></div>
+                        <strong>Hybrid System</strong>
+                        <div class="small text-muted">Combine multiple renewable energy sources for optimal results.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Results Panel -->
+    <div class="card mb-4" id="assessment-results" style="display:none;">
+        <div class="card-body">
+            <h5 class="card-title">Assessment Results <span class="badge bg-success ms-2" id="result-system-type">Hybrid Energy System</span></h5>
+            <div class="accordion" id="resultsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSetup" aria-expanded="true">
+                            Optimal Setup
+                        </button>
+                    </h2>
+                    <div id="collapseSetup" class="accordion-collapse collapse show" data-bs-parent="#resultsAccordion">
+                        <div class="accordion-body">
+                            <div class="row mb-2">
+                                <div class="col-6">Optimal Tilt Angle:</div>
+                                <div class="col-6 fw-bold text-end" id="result-tilt">--</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">Optimal Orientation:</div>
+                                <div class="col-6 fw-bold text-end" id="result-orientation">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutput">
+                            Power Output
+                        </button>
+                    </h2>
+                    <div id="collapseOutput" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <div class="fw-bold mb-2">Energy Production</div>
+                                <div class="row text-center mb-2">
+                                    <div class="col">
+                                        <div class="fs-5 fw-bold" id="result-daily">--</div>
+                                        <div class="small text-muted">Daily<br>kWh</div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="fs-5 fw-bold" id="result-monthly">--</div>
+                                        <div class="small text-muted">Monthly<br>kWh</div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="fs-5 fw-bold" id="result-yearly">--</div>
+                                        <div class="small text-muted">Yearly<br>kWh</div>
+                                    </div>
+                                </div>
+                                <canvas id="outputChart" height="120"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseImpact">
+                            Environmental Impact
+                        </button>
+                    </h2>
+                    <div id="collapseImpact" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                        <div class="accordion-body">
+                            <div class="mb-2 d-flex align-items-center">
+                                <span class="me-2">CO₂ Saved</span>
+                                <span class="badge bg-success">Eco-friendly</span>
+                                <span class="ms-auto fw-bold" id="result-co2">--</span>
+                                <span class="ms-2 small text-muted">kg/year</span>
+                            </div>
+                            <div class="mb-2 small text-success" id="result-trees">Equivalent to planting -- trees</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEquip">
+                            Recommended Equipment
+                        </button>
+                    </h2>
+                    <div id="collapseEquip" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                        <div class="accordion-body" id="result-equipment">
+                            --
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <button class="btn btn-success" id="export-pdf">⬇️ Export Detailed Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+<script>
+    var map = L.map('map').setView([46.5, -111.98], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add search control to map
+    var searchContainer = L.DomUtil.create('div', 'map-search-container');
+    searchContainer.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" placeholder="Search for a location...">
+            <button class="btn btn-primary" type="button" id="searchButton">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+    `;
+    map.getContainer().appendChild(searchContainer);
+
+    // Prevent map from zooming when scrolling over search results
+    L.DomEvent.disableScrollPropagation(searchContainer);
+    L.DomEvent.disableClickPropagation(searchContainer);
+
+    var searchInput = document.getElementById('searchInput');
+    var searchButton = document.getElementById('searchButton');
+    var searchResults = document.getElementById('searchResults');
+    var searchTimeout;
+
+    // Search function using OpenCage API
+    async function searchLocation(query) {
+        try {
+            const encodedQuery = encodeURIComponent(query);
+            const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodedQuery}&key=fd8f381a99404d03857ca7b46f35b865&limit=5`);
+            const data = await response.json();
+            
+            searchResults.innerHTML = '';
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.textContent = result.formatted;
+                    div.onclick = () => {
+                        const lat = result.geometry.lat;
+                        const lng = result.geometry.lng;
+                        
+                        // Remove existing marker if any
+                        if (marker) map.removeLayer(marker);
+                        
+                        // Add new marker
+                        marker = L.marker([lat, lng]).addTo(map);
+                        
+                        // Update location info
+                        document.getElementById('location-info').innerHTML =
+                            'Latitude: ' + lat.toFixed(6) + '<br>Longitude: ' + lng.toFixed(6);
+                        
+                        // Center map on location
+                        map.setView([lat, lng], 13);
+                        
+                        // Show energy options
+                        if (energySelectionCard) {
+                            energySelectionCard.style.display = '';
+                            energySelectionCard.style.animation = 'fadeIn 1s';
+                        }
+                        
+                        // Update instruction text
+                        if (assessmentInstruction) {
+                            assessmentInstruction.textContent = "Now select an energy system type to see your assessment results.";
+                        }
+                        
+                        // Hide search results
+                        searchResults.style.display = 'none';
+                    };
+                    searchResults.appendChild(div);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                searchResults.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            searchResults.innerHTML = '<div class="search-result-item">Error performing search</div>';
+            searchResults.style.display = 'block';
+        }
+    }
+
+    // Add event listeners for search
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        if (e.target.value.length > 2) {
+            searchTimeout = setTimeout(() => {
+                searchLocation(e.target.value);
+            }, 500);
+        } else {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    searchButton.addEventListener('click', () => {
+        if (searchInput.value.length > 2) {
+            searchLocation(searchInput.value);
+        }
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchContainer.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && searchInput.value.length > 2) {
+            searchLocation(searchInput.value);
+        }
+    });
+
+    var marker;
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    // Function to find optimal location within bounds
+    function findOptimalLocation(bounds) {
+        const north = bounds.getNorth();
+        const south = bounds.getSouth();
+        const east = bounds.getEast();
+        const west = bounds.getWest();
+        
+        // Create a grid of points within the bounds
+        const gridSize = 10;
+        const latStep = (north - south) / gridSize;
+        const lngStep = (east - west) / gridSize;
+        
+        let bestPoint = null;
+        let highestScore = -Infinity;
+        
+        // Evaluate each point in the grid
+        for (let lat = south; lat <= north; lat += latStep) {
+            for (let lng = west; lng <= east; lng += lngStep) {
+                const score = evaluateLocation(lat, lng);
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestPoint = [lat, lng];
+                }
+            }
+        }
+        
+        return bestPoint;
+    }
+
+    // Function to evaluate location suitability
+    function evaluateLocation(lat, lng) {
+        // Base score on latitude (solar potential generally better closer to equator)
+        let score = 100 - Math.abs(lat) * 2;
+        
+        // Adjust score based on longitude (time zone considerations)
+        score += (180 - Math.abs(lng)) / 10;
+        
+        return score;
+    }
+
+    // Get reference to energy selection card
+    const energySelectionCard = document.getElementById('energy-selection-card');
+    const assessmentInstruction = document.getElementById('assessment-instruction');
+
+    // Modify the draw control options
+    var drawControl = new L.Control.Draw({
+        draw: {
+            polygon: false, // Disable polygon drawing
+            polyline: false,
+            circle: false,
+            circlemarker: false,
+            marker: true,  // Enable marker placement
+            rectangle: {
+                shapeOptions: {
+                    color: '#0f9d58',
+                    weight: 2,
+                    fillOpacity: 0.2
+                }
+            }
+        },
+        edit: {
+            featureGroup: drawnItems
+        }
+    });
+    map.addControl(drawControl);
+
+    // Handle draw events
+    map.on(L.Draw.Event.CREATED, function(event) {
+        const layer = event.layer;
+        drawnItems.clearLayers();
+        drawnItems.addLayer(layer);
+
+        let selectedLat, selectedLng;
+
+        if (event.layerType === 'marker') {
+            // Direct point selection
+            const latlng = layer.getLatLng();
+            selectedLat = latlng.lat;
+            selectedLng = latlng.lng;
+        } else if (event.layerType === 'rectangle') {
+            // Find optimal location within shape
+            const bounds = layer.getBounds();
+            const optimalPoint = findOptimalLocation(bounds);
+            
+            if (optimalPoint) {
+                // Remove existing marker if any
+                if (marker) map.removeLayer(marker);
+                
+                // Add marker at optimal point
+                marker = L.marker(optimalPoint, {
+                    icon: L.divIcon({
+                        className: 'optimal-point',
+                        iconSize: [12, 12]
+                    })
+                }).addTo(map);
+                
+                selectedLat = optimalPoint[0];
+                selectedLng = optimalPoint[1];
+            }
+        }
+
+        // Update location info and show energy options
+        if (selectedLat && selectedLng) {
+            updateLocationInfo(selectedLat, selectedLng);
+            showEnergyOptions();
+        }
+    });
+
+    // Function to update location info
+    function updateLocationInfo(lat, lng) {
+        document.getElementById('location-info').innerHTML =
+            'Selected Location:<br>' +
+            'Latitude: ' + lat.toFixed(6) + '<br>' +
+            'Longitude: ' + lng.toFixed(6);
+    }
+
+    // Function to show energy options
+    function showEnergyOptions() {
+        const energySelectionCard = document.getElementById('energy-selection-card');
+        if (energySelectionCard) {
+            energySelectionCard.style.display = 'block';
+            energySelectionCard.style.animation = 'fadeIn 0.7s';
+        }
+        
+        // Update instruction text
+        const assessmentInstruction = document.getElementById('assessment-instruction');
+        if (assessmentInstruction) {
+            assessmentInstruction.textContent = "Now select an energy system type to see your assessment results.";
+        }
+    }
+
+    // Add click handlers for energy options
+    document.querySelectorAll('.energy-option').forEach(option => {
+        option.addEventListener('click', async function() {
+            // Remove active state from all options
+            document.querySelectorAll('.energy-option').forEach(opt => {
+                opt.style.boxShadow = '';
+                opt.style.borderColor = '';
+            });
+
+            // Add active state to selected option
+            this.style.boxShadow = '0 0 0 2px #0f9d58';
+            this.style.borderColor = '#0f9d58';
+
+            const systemType = this.dataset.system;
+            const locationInfo = document.getElementById('location-info').innerHTML;
+            
+            if (!locationInfo) {
+                alert('Please select a location on the map first.');
+                return;
+            }
+
+            try {
+                const lat = parseFloat(locationInfo.match(/Latitude: ([-\d.]+)/)[1]);
+                const lon = parseFloat(locationInfo.match(/Longitude: ([-\d.]+)/)[1]);
+                
+                // Show loading state
+                const resultsPanel = document.getElementById('assessment-results');
+                if (resultsPanel) {
+                    resultsPanel.style.display = 'block';
+                    resultsPanel.innerHTML = `
+                        <div class="card-body">
+                            <div class="text-center p-4">
+                                <div class="spinner-border text-success" role="status"></div>
+                                <div class="mt-2">Generating assessment...</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const response = await assessLocation(lat, lon, systemType);
+                if (response.error) {
+                    alert('Error: ' + response.error);
+                    return;
+                }
+
+                // Update results panel with the full HTML structure
+                resultsPanel.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">Assessment Results 
+                            <span class="badge bg-success ms-2" id="result-system-type">${response.system_type}</span>
+                        </h5>
+                        <div class="accordion" id="resultsAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSetup" aria-expanded="true">
+                                        Optimal Setup
+                                    </button>
+                                </h2>
+                                <div id="collapseSetup" class="accordion-collapse collapse show" data-bs-parent="#resultsAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row mb-2">
+                                            <div class="col-6">Optimal Tilt Angle:</div>
+                                            <div class="col-6 fw-bold text-end">${response.optimal_setup.tilt_angle.toFixed(1)}°</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">Optimal Orientation:</div>
+                                            <div class="col-6 fw-bold text-end">${response.optimal_setup.orientation.toFixed(1)}°</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutput">
+                                        Power Output
+                                    </button>
+                                </h2>
+                                <div id="collapseOutput" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            <div class="fw-bold mb-2">Energy Production</div>
+                                            <div class="row text-center mb-2">
+                                                <div class="col">
+                                                    <div class="fs-5 fw-bold">${response.power_output.daily.toFixed(1)}</div>
+                                                    <div class="small text-muted">Daily<br>kWh</div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="fs-5 fw-bold">${Math.round(response.power_output.monthly)}</div>
+                                                    <div class="small text-muted">Monthly<br>kWh</div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="fs-5 fw-bold">${Math.round(response.power_output.yearly)}</div>
+                                                    <div class="small text-muted">Yearly<br>kWh</div>
+                                                </div>
+                                            </div>
+                                            <canvas id="outputChart" height="120"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseImpact">
+                                        Environmental Impact
+                                    </button>
+                                </h2>
+                                <div id="collapseImpact" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                                    <div class="accordion-body">
+                                        <div class="mb-2 d-flex align-items-center">
+                                            <span class="me-2">CO₂ Saved</span>
+                                            <span class="badge bg-success">Eco-friendly</span>
+                                            <span class="ms-auto fw-bold">${Math.round(response.environmental_impact.co2_saved)}</span>
+                                            <span class="ms-2 small text-muted">kg/year</span>
+                                        </div>
+                                        <div class="mb-2 small text-success">Equivalent to planting ${response.environmental_impact.trees_equivalent} trees</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEquip">
+                                        Recommended Equipment
+                                    </button>
+                                </h2>
+                                <div id="collapseEquip" class="accordion-collapse collapse" data-bs-parent="#resultsAccordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            ${response.recommended_equipment.map(item => `<li>${item}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button class="btn btn-success" onclick="window.open('/api/assessment/${response.assessment_id}?format=pdf', '_blank')">
+                                ⬇️ Export Detailed Report
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Initialize new accordion after content is added
+                new bootstrap.Collapse(document.querySelector('#collapseSetup'));
+                
+                // Draw the energy production chart
+                if (response.power_output.monthly_breakdown) {
+                    drawEnergyChart(response.power_output.monthly_breakdown);
+                }
+                
+                // Scroll to results
+                resultsPanel.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error performing assessment: ' + error.message);
+            }
+        });
+    });
+
+    // Function to assess location
+    async function assessLocation(lat, lon, systemType) {
+        try {
+            const response = await fetch('/api/assess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lon,
+                    system_type: systemType
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+    }
+
+    // Function to draw the energy production chart
+    function drawEnergyChart(monthlyData) {
+        const ctx = document.getElementById('outputChart');
+        if (!ctx) return;
+
+        const months = Object.keys(monthlyData);
+        const values = Object.values(monthlyData);
+        
+        // Destroy existing chart if it exists
+        if (window.productionChart) {
+            window.productionChart.destroy();
+        }
+        
+        window.productionChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Energy Production (kWh)',
+                    data: values,
+                    borderColor: '#0f9d58',
+                    backgroundColor: 'rgba(15, 157, 88, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'kWh'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+<!-- Add Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

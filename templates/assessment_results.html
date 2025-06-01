@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renewable Energy Assessment Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+            @top-center {
+                content: "Renewable Energy Assessment Report";
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2em;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #0f9d58;
+        }
+        .header h1 {
+            color: #0f9d58;
+            margin: 0;
+            font-size: 24pt;
+        }
+        .section {
+            margin-bottom: 2em;
+            page-break-inside: avoid;
+        }
+        .section h2 {
+            color: #0f9d58;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+            font-size: 18pt;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5em;
+            border-bottom: 1px dotted #eee;
+            padding: 0.5em 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .value {
+            color: #333;
+        }
+        .equipment-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .equipment-list li {
+            padding: 0.5em;
+            background-color: #f8f9fa;
+            margin-bottom: 0.5em;
+            border-left: 3px solid #0f9d58;
+        }
+        .footer {
+            margin-top: 2em;
+            text-align: center;
+            font-size: 10pt;
+            color: #666;
+        }
+        .impact-box {
+            background-color: #e6f4ea;
+            padding: 1em;
+            border-radius: 4px;
+            margin: 1em 0;
+        }
+        .timestamp {
+            font-style: italic;
+            color: #666;
+            text-align: right;
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Renewable Energy Assessment Report</h1>
+    </div>
+
+    <div class="section">
+        <h2>Location Details</h2>
+        <div class="data-row">
+            <span class="label">Location Name:</span>
+            <span class="value">{{ location.name }}</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Coordinates:</span>
+            <span class="value">{{ location.latitude }}°, {{ location.longitude }}°</span>
+        </div>
+        <div class="data-row">
+            <span class="label">System Type:</span>
+            <span class="value">{{ system_type }}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Optimal Setup Configuration</h2>
+        <div class="data-row">
+            <span class="label">Optimal Tilt Angle:</span>
+            <span class="value">{{ optimal_setup.tilt_angle|floatformat:1 }}°</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Optimal Orientation:</span>
+            <span class="value">{{ optimal_setup.orientation|floatformat:1 }}°</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Power Output Estimates</h2>
+        <div class="data-row">
+            <span class="label">Daily Average:</span>
+            <span class="value">{{ power_output.daily|floatformat:1 }} kWh</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Monthly Average:</span>
+            <span class="value">{{ power_output.monthly|floatformat:0 }} kWh</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Yearly Total:</span>
+            <span class="value">{{ power_output.yearly|floatformat:0 }} kWh</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Environmental Impact</h2>
+        <div class="impact-box">
+            <div class="data-row">
+                <span class="label">CO₂ Savings:</span>
+                <span class="value">{{ environmental_impact.co2_saved|floatformat:0 }} kg/year</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Equivalent to Trees Planted:</span>
+                <span class="value">{{ environmental_impact.trees_equivalent }} trees</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Recommended Equipment</h2>
+        <ul class="equipment-list">
+            {% for item in recommended_equipment %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="footer">
+        <div class="timestamp">
+            Report generated on: {{ created_at }}
+        </div>
+        <p>Assessment ID: {{ assessment_id }}</p>
+    </div>
+</body>
+</html> 
