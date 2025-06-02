@@ -10,4 +10,3 @@ EcoNexus is a comprehensive web application that helps users assess and optimize
 - Environmental impact assessment
 - Equipment recommendations
 - PDF report generation
-
