@@ -33,9 +33,10 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '192.168.1.40',  # Your computer's IP address
-    '*',  # Allow all hosts in development
+    '192.168.1.40',  
+    '*', 
 ]
+
 
 
 # Application definition
