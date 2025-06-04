@@ -268,7 +268,9 @@
                 </div>
             </div>
             <div class="mt-4 text-center">
-                <button class="btn btn-success" id="export-pdf">⬇️ Export Detailed Report</button>
+                <button class="btn btn-success" onclick="exportPDF(this)">
+                    ⬇️ Export Detailed Report
+                </button>
             </div>
         </div>
     </div>
@@ -665,7 +667,7 @@
                             </div>
                         </div>
                         <div class="mt-4 text-center">
-                            <button class="btn btn-success" onclick="window.open('/api/assessment/${response.assessment_id}?format=pdf', '_blank')">
+                            <button class="btn btn-success" onclick="exportPDF(this)">
                                 ⬇️ Export Detailed Report
                             </button>
                         </div>
@@ -760,6 +762,63 @@
                 }
             }
         });
+    }
+
+    // Add this function before the closing </script> tag
+    async function exportPDF(button) {
+        const resultsData = {
+            location: {
+                name: document.querySelector('#location-info').textContent,
+                latitude: parseFloat(document.querySelector('#location-info').textContent.match(/Latitude: ([-\d.]+)/)[1]),
+                longitude: parseFloat(document.querySelector('#location-info').textContent.match(/Longitude: ([-\d.]+)/)[1])
+            },
+            system_type: document.querySelector('#result-system-type').textContent,
+            optimal_setup: {
+                tilt_angle: parseFloat(document.querySelector('#collapseSetup .row:first-child .fw-bold').textContent),
+                orientation: parseFloat(document.querySelector('#collapseSetup .row:last-child .fw-bold').textContent)
+            },
+            power_output: {
+                daily: parseFloat(document.querySelector('#collapseOutput .col:nth-child(1) .fs-5').textContent),
+                monthly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(2) .fs-5').textContent),
+                yearly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(3) .fs-5').textContent)
+            },
+            environmental_impact: {
+                co2_saved: parseFloat(document.querySelector('#collapseImpact .fw-bold').textContent),
+                trees_equivalent: parseInt(document.querySelector('#collapseImpact .text-success').textContent.match(/\d+/)[0])
+            },
+            recommended_equipment: Array.from(document.querySelectorAll('#collapseEquip li')).map(li => li.textContent),
+            created_at: new Date().toISOString()
+        };
+
+        try {
+            const response = await fetch('/api/generate-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(resultsData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Get the PDF blob
+            const blob = await response.blob();
+            
+            // Create a download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `renewable_energy_assessment_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Error generating PDF report. Please try again.');
+        }
     }
 </script>
 <!-- Add Chart.js library -->

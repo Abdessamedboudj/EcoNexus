@@ -538,9 +538,8 @@ def get_assessment(request, assessment_id):
                 impact_table = Table(impact_data, colWidths=[2*inch, 4*inch])
                 impact_table.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-                    ('PADDING', (0, 0), (-1, -1), 6),
                     ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#e6f4ea')),
+                    ('PADDING', (0, 0), (-1, -1), 6),
                 ]))
                 elements.append(impact_table)
                 elements.append(Spacer(1, 20))
@@ -598,6 +597,157 @@ def get_assessment(request, assessment_id):
         
     except (Assessment.DoesNotExist, Result.DoesNotExist):
         return JsonResponse({'error': 'Assessment not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def generate_pdf(request):
+    """Generate PDF report from assessment data"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Create PDF buffer
+        buffer = io.BytesIO()
+        
+        # Create the PDF document
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72
+        )
+        
+        # Container for the 'Flowable' objects
+        elements = []
+        
+        # Get styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12,
+            textColor=colors.HexColor('#0f9d58')
+        )
+        
+        # Add title
+        elements.append(Paragraph("Renewable Energy Assessment Report", title_style))
+        elements.append(Spacer(1, 12))
+        
+        # Location Details
+        elements.append(Paragraph("Location Details", heading_style))
+        location_data = [
+            ["Location:", data['location']['name']],
+            ["Coordinates:", f"{data['location']['latitude']}°, {data['location']['longitude']}°"],
+            ["System Type:", data['system_type']]
+        ]
+        location_table = Table(location_data, colWidths=[2*inch, 4*inch])
+        location_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(location_table)
+        elements.append(Spacer(1, 20))
+        
+        # Optimal Setup
+        elements.append(Paragraph("Optimal Setup Configuration", heading_style))
+        setup_data = [
+            ["Optimal Tilt Angle:", f"{data['optimal_setup']['tilt_angle']:.1f}°"],
+            ["Optimal Orientation:", f"{data['optimal_setup']['orientation']:.1f}°"]
+        ]
+        setup_table = Table(setup_data, colWidths=[2*inch, 4*inch])
+        setup_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(setup_table)
+        elements.append(Spacer(1, 20))
+        
+        # Power Output
+        elements.append(Paragraph("Power Output Estimates", heading_style))
+        power_data = [
+            ["Daily Average:", f"{data['power_output']['daily']:.1f} kWh"],
+            ["Monthly Average:", f"{data['power_output']['monthly']:.0f} kWh"],
+            ["Yearly Total:", f"{data['power_output']['yearly']:.0f} kWh"]
+        ]
+        power_table = Table(power_data, colWidths=[2*inch, 4*inch])
+        power_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(power_table)
+        elements.append(Spacer(1, 20))
+        
+        # Environmental Impact
+        elements.append(Paragraph("Environmental Impact", heading_style))
+        impact_data = [
+            ["CO₂ Savings:", f"{data['environmental_impact']['co2_saved']:.0f} kg/year"],
+            ["Trees Equivalent:", f"{data['environmental_impact']['trees_equivalent']} trees"]
+        ]
+        impact_table = Table(impact_data, colWidths=[2*inch, 4*inch])
+        impact_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#e6f4ea')),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(impact_table)
+        elements.append(Spacer(1, 20))
+        
+        # Recommended Equipment
+        elements.append(Paragraph("Recommended Equipment", heading_style))
+        equipment_items = [[item] for item in data['recommended_equipment']]
+        if equipment_items:
+            equipment_table = Table(equipment_items, colWidths=[6*inch])
+            equipment_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('PADDING', (0, 0), (-1, -1), 6),
+            ]))
+            elements.append(equipment_table)
+        
+        # Footer
+        elements.append(Spacer(1, 30))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=1
+        )
+        elements.append(Paragraph(
+            f"Report generated on: {data['created_at']}",
+            footer_style
+        ))
+        
+        # Build PDF document
+        doc.build(elements)
+        
+        # Get the value of the BytesIO buffer and write it to the response
+        pdf = buffer.getvalue()
+        buffer.close()
+        
+        # Generate response
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="renewable_energy_assessment_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+        response.write(pdf)
+        
+        return response
+        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
