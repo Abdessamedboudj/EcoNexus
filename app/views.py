@@ -61,13 +61,25 @@ def get_nasa_power_data(lat, lon):
         f"?parameters={','.join(parameters)}"
         f"&community=RE&longitude={lon}&latitude={lat}&format=JSON"
     )
+    
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=30)  # Increased timeout
         response.raise_for_status()
-        return response.json()['properties']['parameter']
+        data = response.json()
+        
+        if 'properties' not in data or 'parameter' not in data['properties']:
+            raise ValueError("Invalid response format from NASA POWER API")
+            
+        return data['properties']['parameter']
+        
+    except requests.Timeout:
+        raise Exception("NASA POWER API request timed out. Please try again.")
+    except requests.RequestException as e:
+        raise Exception(f"Failed to fetch data from NASA POWER API: {str(e)}")
+    except (KeyError, ValueError) as e:
+        raise Exception(f"Invalid data received from NASA POWER API: {str(e)}")
     except Exception as e:
-        print(f"NASA POWER API error: {e}")
-        return None
+        raise Exception(f"Unexpected error while fetching NASA POWER data: {str(e)}")
 
 # -----------------------------
 # Calculation Functions
@@ -316,17 +328,17 @@ def assess_location(request):
         lon = float(data.get('longitude'))
         system_type = data.get('system_type')
         
-        # Get location name from coordinates
-        location_name = get_location_name(lat, lon)
-        
         # Validate inputs
         if not all([lat, lon, system_type]):
             return JsonResponse({'error': 'Missing required parameters'}, status=400)
         
         # Get climate data
-        climate_data = get_nasa_power_data(lat, lon)
-        if not climate_data:
-            return JsonResponse({'error': 'Failed to fetch climate data'}, status=500)
+        try:
+            climate_data = get_nasa_power_data(lat, lon)
+            if not climate_data:
+                return JsonResponse({'error': 'Failed to fetch climate data'}, status=500)
+        except Exception as e:
+            return JsonResponse({'error': f'NASA API error: {str(e)}'}, status=500)
         
         # Calculate power output based on system type
         calculators = {
@@ -341,61 +353,54 @@ def assess_location(request):
         if system_type not in calculators:
             return JsonResponse({'error': 'Invalid system type'}, status=400)
         
-        # Calculate power output
-        power_output = calculators[system_type](climate_data)
-        
-        # Calculate environmental impact
-        impact = calculate_environmental_impact(power_output['yearly'])
-        
-        # Calculate optimal setup
-        optimal_setup = {
-            'tilt_angle': recommend_tilt_angle(lat)['Year-Round'],
-            'orientation': float(recommend_turbine_orientation(climate_data['WD10M']['ANN']).split('°')[0])
-            if system_type in ['wind', 'hybrid'] else lat
-        }
-        
-        # Get recommended equipment
-        equipment = get_recommended_equipment(system_type, power_output)
-        
-        # Save assessment and results
-        assessment = Assessment.objects.create(
-            location_name=location_name,  # Use the geocoded location name
-            latitude=lat,
-            longitude=lon,
-            system_type=system_type
-        )
-        
-        Result.objects.create(
-            assessment=assessment,
-            optimal_tilt=optimal_setup['tilt_angle'],
-            optimal_orientation=optimal_setup['orientation'],
-            daily_output=power_output['daily'],
-            monthly_output=power_output['monthly'],
-            yearly_output=power_output['yearly'],
-            co2_saved=impact['co2_saved'],
-            trees_equivalent=impact['trees_equivalent'],
-            recommended_equipment=json.dumps(equipment)
-        )
-        
-        response_data = {
-            'assessment_id': assessment.id,
-            'location': {
-                'name': location_name,  # Include the geocoded location name
-                'latitude': lat,
-                'longitude': lon
-            },
-            'system_type': system_type.replace('_', ' ').title(),
-            'optimal_setup': optimal_setup,
-            'power_output': power_output,
-            'environmental_impact': impact,
-            'recommended_equipment': equipment,
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        return JsonResponse(response_data)
-        
+        try:
+            # Calculate power output
+            power_output = calculators[system_type](climate_data)
+            
+            # Calculate environmental impact
+            impact = calculate_environmental_impact(power_output['yearly'])
+            
+            # Calculate optimal setup
+            optimal_setup = {
+                'tilt_angle': recommend_tilt_angle(lat)['Year-Round'],
+                'orientation': float(recommend_turbine_orientation(climate_data['WD10M']['ANN']).split('°')[0])
+                if system_type in ['wind', 'hybrid'] else lat
+            }
+            
+            # Get recommended equipment
+            equipment = get_recommended_equipment(system_type, power_output)
+            
+            # Try to get location name, but don't fail if it doesn't work
+            try:
+                location_name = get_location_name(lat, lon)
+            except:
+                location_name = f"Location at {lat:.4f}, {lon:.4f}"
+            
+            response_data = {
+                'location': {
+                    'name': location_name,
+                    'latitude': lat,
+                    'longitude': lon
+                },
+                'system_type': system_type.replace('_', ' ').title(),
+                'optimal_setup': optimal_setup,
+                'power_output': power_output,
+                'environmental_impact': impact,
+                'recommended_equipment': equipment,
+                'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            return JsonResponse(response_data)
+            
+        except Exception as calc_error:
+            return JsonResponse({'error': f'Calculation error: {str(calc_error)}'}, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except ValueError as ve:
+        return JsonResponse({'error': f'Value error: {str(ve)}'}, status=400)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': f'Unexpected error: {str(e)}'}, status=500)
 
 @csrf_exempt
 def get_assessment(request, assessment_id):
