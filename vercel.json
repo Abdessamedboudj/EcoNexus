@@ -13,5 +13,9 @@
             "src": "/(.*)",
             "dest": "myrobot/wsgi.py"
         }
-    ]
+    ],
+    "env": {
+        "DJANGO_SETTINGS_MODULE": "myrobot.settings",
+        "ALLOWED_HOSTS": ".vercel.app"
+    }
 }

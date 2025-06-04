@@ -46,4 +46,8 @@ ENV/
 Thumbs.db
 
 # Large binary files
-wkhtmltox.exe 
+wkhtmltox.exe
+
+# Static files
+/static
+/staticfiles 
