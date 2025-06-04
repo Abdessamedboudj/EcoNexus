@@ -1,4 +1,5 @@
 {
+    "version": 2,
     "builds": [{
         "src": "myrobot/wsgi.py",
         "use": "@vercel/python",
@@ -16,6 +17,7 @@
     ],
     "env": {
         "DJANGO_SETTINGS_MODULE": "myrobot.settings",
-        "ALLOWED_HOSTS": ".vercel.app"
+        "ALLOWED_HOSTS": ".vercel.app",
+        "DJANGO_DEBUG": "False"
     }
 }
