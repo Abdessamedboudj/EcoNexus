@@ -12,5 +12,9 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myrobot.settings')
 
-application = get_wsgi_application()
-app = application
+try:
+    application = get_wsgi_application()
+    app = application  # This is needed for Vercel
+except Exception as e:
+    print(f"Error loading application: {e}")
+    raise e

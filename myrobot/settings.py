@@ -67,7 +67,7 @@ ROOT_URLCONF = 'myrobot.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'myrobot.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': ':memory:' if os.getenv('VERCEL_ENV') else os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -130,6 +130,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -140,3 +141,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app'
 ]
+
+# Simplified static file serving
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_ALLOW_ALL_ORIGINS = True
