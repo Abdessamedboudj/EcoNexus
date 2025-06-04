@@ -1,0 +1,17 @@
+{
+    "builds": [{
+        "src": "myrobot/wsgi.py",
+        "use": "@vercel/python",
+        "config": { "maxLambdaSize": "50mb", "runtime": "python3.9" }
+    }],
+    "routes": [
+        {
+            "src": "/static/(.*)",
+            "dest": "/static/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "myrobot/wsgi.py"
+        }
+    ]
+}
