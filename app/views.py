@@ -615,14 +615,14 @@ def generate_pdf(request):
         buffer = io.BytesIO()
         
         try:
-            # Create the PDF document
+            # Create the PDF document with minimal settings
             doc = SimpleDocTemplate(
                 buffer,
                 pagesize=A4,
-                rightMargin=72,
-                leftMargin=72,
-                topMargin=72,
-                bottomMargin=72
+                rightMargin=36,
+                leftMargin=36,
+                topMargin=36,
+                bottomMargin=36
             )
             
             # Container for the 'Flowable' objects
@@ -633,22 +633,22 @@ def generate_pdf(request):
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Heading1'],
-                fontSize=24,
-                spaceAfter=30,
+                fontSize=16,
+                spaceAfter=20,
                 alignment=1  # Center alignment
             )
             
             heading_style = ParagraphStyle(
                 'CustomHeading',
                 parent=styles['Heading2'],
-                fontSize=16,
-                spaceAfter=12,
+                fontSize=14,
+                spaceAfter=10,
                 textColor=colors.HexColor('#0f9d58')
             )
             
             # Add title
             elements.append(Paragraph("Renewable Energy Assessment Report", title_style))
-            elements.append(Spacer(1, 12))
+            elements.append(Spacer(1, 10))
             
             try:
                 # Location Details
@@ -658,14 +658,13 @@ def generate_pdf(request):
                     ["Coordinates:", f"{data['location']['latitude']}°, {data['location']['longitude']}°"],
                     ["System Type:", data['system_type']]
                 ]
-                location_table = Table(location_data, colWidths=[2*inch, 4*inch])
+                location_table = Table(location_data, colWidths=[1.5*inch, 4*inch])
                 location_table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                     ('PADDING', (0, 0), (-1, -1), 6),
                 ]))
                 elements.append(location_table)
-                elements.append(Spacer(1, 20))
+                elements.append(Spacer(1, 15))
                 
                 # Optimal Setup
                 elements.append(Paragraph("Optimal Setup Configuration", heading_style))
@@ -673,14 +672,13 @@ def generate_pdf(request):
                     ["Optimal Tilt Angle:", f"{data['optimal_setup']['tilt_angle']:.1f}°"],
                     ["Optimal Orientation:", f"{data['optimal_setup']['orientation']:.1f}°"]
                 ]
-                setup_table = Table(setup_data, colWidths=[2*inch, 4*inch])
+                setup_table = Table(setup_data, colWidths=[1.5*inch, 4*inch])
                 setup_table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                     ('PADDING', (0, 0), (-1, -1), 6),
                 ]))
                 elements.append(setup_table)
-                elements.append(Spacer(1, 20))
+                elements.append(Spacer(1, 15))
                 
                 # Power Output
                 elements.append(Paragraph("Power Output Estimates", heading_style))
@@ -689,14 +687,13 @@ def generate_pdf(request):
                     ["Monthly Average:", f"{data['power_output']['monthly']:.0f} kWh"],
                     ["Yearly Total:", f"{data['power_output']['yearly']:.0f} kWh"]
                 ]
-                power_table = Table(power_data, colWidths=[2*inch, 4*inch])
+                power_table = Table(power_data, colWidths=[1.5*inch, 4*inch])
                 power_table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                     ('PADDING', (0, 0), (-1, -1), 6),
                 ]))
                 elements.append(power_table)
-                elements.append(Spacer(1, 20))
+                elements.append(Spacer(1, 15))
                 
                 # Environmental Impact
                 elements.append(Paragraph("Environmental Impact", heading_style))
@@ -704,28 +701,27 @@ def generate_pdf(request):
                     ["CO₂ Savings:", f"{data['environmental_impact']['co2_saved']:.0f} kg/year"],
                     ["Trees Equivalent:", f"{data['environmental_impact']['trees_equivalent']} trees"]
                 ]
-                impact_table = Table(impact_data, colWidths=[2*inch, 4*inch])
+                impact_table = Table(impact_data, colWidths=[1.5*inch, 4*inch])
                 impact_table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#e6f4ea')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                     ('PADDING', (0, 0), (-1, -1), 6),
                 ]))
                 elements.append(impact_table)
-                elements.append(Spacer(1, 20))
+                elements.append(Spacer(1, 15))
                 
                 # Recommended Equipment
                 elements.append(Paragraph("Recommended Equipment", heading_style))
                 equipment_items = [[item] for item in data['recommended_equipment']]
                 if equipment_items:
-                    equipment_table = Table(equipment_items, colWidths=[6*inch])
+                    equipment_table = Table(equipment_items, colWidths=[5.5*inch])
                     equipment_table.setStyle(TableStyle([
-                        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                         ('PADDING', (0, 0), (-1, -1), 6),
                     ]))
                     elements.append(equipment_table)
                 
                 # Footer
-                elements.append(Spacer(1, 30))
+                elements.append(Spacer(1, 20))
                 footer_style = ParagraphStyle(
                     'Footer',
                     parent=styles['Normal'],
@@ -739,21 +735,44 @@ def generate_pdf(request):
                 ))
                 
                 print("Building PDF document...")
-                # Build PDF document
-                doc.build(elements)
-                print("PDF document built successfully")
                 
-                # Get the value of the BytesIO buffer and write it to the response
-                pdf = buffer.getvalue()
-                buffer.close()
+                # Build PDF document with error handling
+                try:
+                    doc.build(elements)
+                    print("PDF document built successfully")
+                except Exception as build_error:
+                    print(f"Error building PDF: {build_error}")
+                    return JsonResponse({
+                        'error': 'Failed to build PDF document',
+                        'details': str(build_error)
+                    }, status=500)
+                
+                # Get the value of the BytesIO buffer
+                try:
+                    pdf = buffer.getvalue()
+                    print("PDF buffer retrieved successfully")
+                except Exception as buffer_error:
+                    print(f"Error getting PDF buffer: {buffer_error}")
+                    return JsonResponse({
+                        'error': 'Failed to get PDF content',
+                        'details': str(buffer_error)
+                    }, status=500)
+                finally:
+                    buffer.close()
                 
                 # Generate response
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename="renewable_energy_assessment_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
-                response.write(pdf)
-                
-                print("PDF response generated successfully")
-                return response
+                try:
+                    response = HttpResponse(content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="renewable_energy_assessment_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+                    response.write(pdf)
+                    print("PDF response generated successfully")
+                    return response
+                except Exception as response_error:
+                    print(f"Error generating response: {response_error}")
+                    return JsonResponse({
+                        'error': 'Failed to generate response',
+                        'details': str(response_error)
+                    }, status=500)
                 
             except KeyError as ke:
                 print(f"KeyError while processing data: {ke}")
