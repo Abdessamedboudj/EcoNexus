@@ -13,7 +13,7 @@
             "src": "build_files.sh",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "staticfiles"
+                "distDir": "static"
             }
         }
     ],
@@ -35,6 +35,7 @@
         "DJANGO_SETTINGS_MODULE": "myrobot.settings",
         "ALLOWED_HOSTS": ".vercel.app",
         "DJANGO_DEBUG": "False",
-        "VERCEL_ENV": "production"
+        "VERCEL_ENV": "production",
+        "PYTHONPATH": "/var/task"
     }
 }
