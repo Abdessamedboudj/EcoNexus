@@ -268,7 +268,7 @@
                 </div>
             </div>
             <div class="mt-4 text-center">
-                <button class="btn btn-success" onclick="exportPDF(this)">
+                <button class="btn btn-success" onclick="exportPDF()">
                     ⬇️ Export Detailed Report
                 </button>
             </div>
@@ -667,7 +667,7 @@
                             </div>
                         </div>
                         <div class="mt-4 text-center">
-                            <button class="btn btn-success" onclick="exportPDF(this)">
+                            <button class="btn btn-success" onclick="exportPDF()">
                                 ⬇️ Export Detailed Report
                             </button>
                         </div>
@@ -765,32 +765,41 @@
     }
 
     // Add this function before the closing </script> tag
-    async function exportPDF(button) {
-        const resultsData = {
-            location: {
-                name: document.querySelector('#location-info').textContent,
-                latitude: parseFloat(document.querySelector('#location-info').textContent.match(/Latitude: ([-\d.]+)/)[1]),
-                longitude: parseFloat(document.querySelector('#location-info').textContent.match(/Longitude: ([-\d.]+)/)[1])
-            },
-            system_type: document.querySelector('#result-system-type').textContent,
-            optimal_setup: {
-                tilt_angle: parseFloat(document.querySelector('#collapseSetup .row:first-child .fw-bold').textContent),
-                orientation: parseFloat(document.querySelector('#collapseSetup .row:last-child .fw-bold').textContent)
-            },
-            power_output: {
-                daily: parseFloat(document.querySelector('#collapseOutput .col:nth-child(1) .fs-5').textContent),
-                monthly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(2) .fs-5').textContent),
-                yearly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(3) .fs-5').textContent)
-            },
-            environmental_impact: {
-                co2_saved: parseFloat(document.querySelector('#collapseImpact .fw-bold').textContent),
-                trees_equivalent: parseInt(document.querySelector('#collapseImpact .text-success').textContent.match(/\d+/)[0])
-            },
-            recommended_equipment: Array.from(document.querySelectorAll('#collapseEquip li')).map(li => li.textContent),
-            created_at: new Date().toISOString()
-        };
-
+    async function exportPDF() {
         try {
+            // Get location info
+            const locationInfo = document.querySelector('#location-info').textContent;
+            const latMatch = locationInfo.match(/Latitude: ([-\d.]+)/);
+            const lonMatch = locationInfo.match(/Longitude: ([-\d.]+)/);
+            
+            if (!latMatch || !lonMatch) {
+                throw new Error('Could not find location coordinates');
+            }
+
+            const resultsData = {
+                location: {
+                    name: locationInfo,
+                    latitude: parseFloat(latMatch[1]),
+                    longitude: parseFloat(lonMatch[1])
+                },
+                system_type: document.querySelector('#result-system-type').textContent,
+                optimal_setup: {
+                    tilt_angle: parseFloat(document.querySelector('#collapseSetup .row:first-child .fw-bold').textContent),
+                    orientation: parseFloat(document.querySelector('#collapseSetup .row:last-child .fw-bold').textContent)
+                },
+                power_output: {
+                    daily: parseFloat(document.querySelector('#collapseOutput .col:nth-child(1) .fs-5').textContent),
+                    monthly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(2) .fs-5').textContent),
+                    yearly: parseFloat(document.querySelector('#collapseOutput .col:nth-child(3) .fs-5').textContent)
+                },
+                environmental_impact: {
+                    co2_saved: parseFloat(document.querySelector('#collapseImpact .fw-bold').textContent),
+                    trees_equivalent: parseInt(document.querySelector('#collapseImpact .text-success').textContent.match(/\d+/)[0])
+                },
+                recommended_equipment: Array.from(document.querySelectorAll('#collapseEquip li')).map(li => li.textContent),
+                created_at: new Date().toISOString()
+            };
+
             const response = await fetch('/api/generate-pdf', {
                 method: 'POST',
                 headers: {

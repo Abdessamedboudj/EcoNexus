@@ -1,21 +1,30 @@
 {
     "version": 2,
-    "builds": [{
-        "src": "myrobot/wsgi.py",
-        "use": "@vercel/python",
-        "config": { 
-            "maxLambdaSize": "50mb",
-            "runtime": "python3.9"
+    "builds": [
+        {
+            "src": "myrobot/wsgi.py",
+            "use": "@vercel/python",
+            "config": { 
+                "maxLambdaSize": "50mb",
+                "runtime": "python3.9"
+            }
+        },
+        {
+            "src": "build_files.sh",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "staticfiles"
+            }
         }
-    },
-    {
-        "src": "static/**",
-        "use": "@vercel/static"
-    }],
+    ],
     "routes": [
         {
             "src": "/static/(.*)",
             "dest": "/static/$1"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "myrobot/wsgi.py"
         },
         {
             "src": "/(.*)",
