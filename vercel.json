@@ -6,14 +6,8 @@
             "use": "@vercel/python",
             "config": { 
                 "maxLambdaSize": "50mb",
-                "runtime": "python3.9"
-            }
-        },
-        {
-            "src": "build_files.sh",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "static"
+                "runtime": "python3.9",
+                "buildCommand": "python -m pip install -r requirements.txt && python manage.py collectstatic --noinput"
             }
         }
     ],

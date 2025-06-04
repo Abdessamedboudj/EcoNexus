@@ -128,24 +128,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = []  # Empty list since we're collecting all static files to STATIC_ROOT
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Ensure static directory exists
+os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
 
 # Simplified static file serving
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_ALLOW_ALL_ORIGINS = True
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# CSRF settings
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.vercel.app'
-]
 
 # Vercel-specific settings
 if os.getenv('VERCEL_ENV') == 'production':
@@ -157,6 +147,8 @@ if os.getenv('VERCEL_ENV') == 'production':
             'NAME': ':memory:',
         }
     }
+    # Ensure STATIC_ROOT directory exists
+    os.makedirs(STATIC_ROOT, exist_ok=True)
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
     DEBUG = True
@@ -166,3 +158,13 @@ else:
             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
     }
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.vercel.app'
+]

@@ -1,0 +1,14 @@
+*.pyc
+__pycache__
+.env
+.env.local
+.venv
+venv/
+ENV/
+env/
+*.sqlite3
+.git
+.gitignore
+*.log
+.DS_Store
+node_modules 
