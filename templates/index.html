@@ -331,9 +331,11 @@
                         // Add new marker
                         marker = L.marker([lat, lng]).addTo(map);
                         
-                        // Update location info
+                        // Update location info with location name
                         document.getElementById('location-info').innerHTML =
-                            'Latitude: ' + lat.toFixed(6) + '<br>Longitude: ' + lng.toFixed(6);
+                            'Selected Location: ' + result.formatted + '<br>' +
+                            'Latitude: ' + lat.toFixed(6) + '<br>' +
+                            'Longitude: ' + lng.toFixed(6);
                         
                         // Center map on location
                         map.setView([lat, lng], 13);
@@ -790,7 +792,7 @@ async function exportPDF() {
         // Prepare the data for PDF generation
         const resultsData = {
             location: {
-                name: document.querySelector('#result-system-type').closest('.card-body').querySelector('h5').textContent.replace('Assessment Results', '').trim(),
+                name: document.querySelector('#location-info').textContent.split('Selected Location:')[1]?.split('Latitude:')[0]?.trim() || 'Unknown Location',
                 latitude: parseFloat(latMatch[1]),
                 longitude: parseFloat(lonMatch[1])
             },
