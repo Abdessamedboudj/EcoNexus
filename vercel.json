@@ -1,20 +1,17 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "myrobot/wsgi.py",
-            "use": "@vercel/python",
-            "config": { 
-                "maxLambdaSize": "50mb",
-                "runtime": "python3.9",
-                "buildCommand": "pip install -r requirements.txt"
-            }
-        },
-        {
-            "src": "static/**",
-            "use": "@vercel/static"
+    "builds": [{
+        "src": "myrobot/wsgi.py",
+        "use": "@vercel/python",
+        "config": { 
+            "maxLambdaSize": "50mb",
+            "runtime": "python3.9"
         }
-    ],
+    },
+    {
+        "src": "static/**",
+        "use": "@vercel/static"
+    }],
     "routes": [
         {
             "src": "/static/(.*)",
@@ -29,13 +26,6 @@
         "DJANGO_SETTINGS_MODULE": "myrobot.settings",
         "ALLOWED_HOSTS": ".vercel.app",
         "DJANGO_DEBUG": "False",
-        "VERCEL_ENV": "production",
-        "PYTHONPATH": "/var/task"
-    },
-    "functions": {
-        "api/generate-pdf": {
-            "memory": 1024,
-            "maxDuration": 10
-        }
+        "VERCEL_ENV": "production"
     }
 }
