@@ -134,15 +134,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# Ensure static directory exists
-os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
-os.makedirs(STATIC_ROOT, exist_ok=True)
+if os.getenv('VERCEL_ENV') == 'production':
+    STATIC_ROOT = '/tmp/static'  # Use /tmp for Vercel's writable temporary directory
+    STATICFILES_DIRS = []
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+    # Create directories only in development
+    if not os.getenv('VERCEL_ENV'):
+        os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
+        os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # Simplified static file serving
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
