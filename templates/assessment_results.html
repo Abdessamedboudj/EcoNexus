@@ -5,171 +5,274 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Renewable Energy Assessment Report</title>
     <style>
+        :root {
+            --primary-color: #003049;
+            --secondary-color: #d62828;
+            --accent-color: #f77f00;
+            --accent-light: #fcbf49;
+            --background-light: #eae2b7;
+        }
+        
         @page {
             size: A4;
-            margin: 2.5cm;
-            @top-center {
-                content: "Renewable Energy Assessment Report";
-                font-family: Arial, sans-serif;
-                font-size: 10pt;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-family: Arial, sans-serif;
-                font-size: 10pt;
-            }
+            margin: 2cm;
         }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: var(--primary-color);
             margin: 0;
             padding: 0;
+            background: #fff;
         }
-        .header {
+        
+        .report-header {
             text-align: center;
-            margin-bottom: 2em;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #0f9d58;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
         }
-        .header h1 {
-            color: #0f9d58;
+        
+        .report-header h1 {
+            font-size: 24px;
+            font-weight: 600;
             margin: 0;
-            font-size: 24pt;
+            color: var(--primary-color);
         }
+        
+        .timestamp {
+            color: var(--accent-color);
+            font-size: 14px;
+            margin-top: 0.5rem;
+        }
+        
         .section {
-            margin-bottom: 2em;
-            page-break-inside: avoid;
+            margin-bottom: 2rem;
+            background: var(--background-light);
+            border-radius: 8px;
+            padding: 1.5rem;
         }
-        .section h2 {
-            color: #0f9d58;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 0.5em;
-            margin-bottom: 1em;
-            font-size: 18pt;
+        
+        .section-title {
+            color: var(--primary-color);
+            font-size: 18px;
+            margin: 0 0 1rem 0;
+            font-weight: 500;
         }
-        .data-row {
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+        
+        .info-value {
+            color: var(--primary-color);
+        }
+        
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .weather-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 0.5em;
-            border-bottom: 1px dotted #eee;
-            padding: 0.5em 0;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--accent-light);
         }
-        .label {
-            font-weight: bold;
-            color: #555;
+        
+        .weather-label {
+            font-weight: 500;
+            color: var(--secondary-color);
         }
-        .value {
-            color: #333;
+        
+        .weather-value {
+            color: var(--primary-color);
         }
-        .equipment-list {
-            list-style-type: none;
-            padding: 0;
+        
+        .power-output {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
         }
-        .equipment-list li {
-            padding: 0.5em;
-            background-color: #f8f9fa;
-            margin-bottom: 0.5em;
-            border-left: 3px solid #0f9d58;
+        
+        .power-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--accent-light);
         }
+        
+        .environmental-impact {
+            background: var(--background-light);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--accent-light);
+        }
+        
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .equipment-table th {
+            background: var(--primary-color);
+            color: white;
+            text-align: left;
+            padding: 0.75rem;
+        }
+        
+        .equipment-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--accent-light);
+        }
+        
+        .equipment-table tr:nth-child(even) {
+            background: var(--background-light);
+        }
+        
         .footer {
-            margin-top: 2em;
+            margin-top: 2rem;
             text-align: center;
-            font-size: 10pt;
-            color: #666;
+            color: var(--primary-color);
+            font-size: 12px;
+            padding-top: 1rem;
+            border-top: 1px solid var(--accent-light);
         }
-        .impact-box {
-            background-color: #e6f4ea;
-            padding: 1em;
-            border-radius: 4px;
-            margin: 1em 0;
-        }
-        .timestamp {
-            font-style: italic;
-            color: #666;
-            text-align: right;
-            margin-top: 1em;
+        
+        .copyright {
+            margin-top: 0.5rem;
+            color: var(--accent-color);
+            font-size: 11px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="report-header">
         <h1>Renewable Energy Assessment Report</h1>
+        <div class="timestamp">Generated on {{ created_at }}</div>
     </div>
 
     <div class="section">
-        <h2>Location Details</h2>
-        <div class="data-row">
-            <span class="label">Location Name:</span>
-            <span class="value">{{ location.name }}</span>
-        </div>
-        <div class="data-row">
-            <span class="label">Coordinates:</span>
-            <span class="value">{{ location.latitude }}°, {{ location.longitude }}°</span>
-        </div>
-        <div class="data-row">
-            <span class="label">System Type:</span>
-            <span class="value">{{ system_type }}</span>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>Optimal Setup Configuration</h2>
-        <div class="data-row">
-            <span class="label">Optimal Tilt Angle:</span>
-            <span class="value">{{ optimal_setup.tilt_angle|floatformat:1 }}°</span>
-        </div>
-        <div class="data-row">
-            <span class="label">Optimal Orientation:</span>
-            <span class="value">{{ optimal_setup.orientation|floatformat:1 }}°</span>
+        <h2 class="section-title">Location Information</h2>
+        <div class="info-grid">
+            <div class="info-label">Latitude:</div>
+            <div class="info-value">{{ location.latitude|floatformat:6 }}</div>
+            
+            <div class="info-label">Longitude:</div>
+            <div class="info-value">{{ location.longitude|floatformat:6 }}</div>
+            
+            <div class="info-label">Location Name:</div>
+            <div class="info-value">{{ location.name }}</div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Power Output Estimates</h2>
-        <div class="data-row">
-            <span class="label">Daily Average:</span>
-            <span class="value">{{ power_output.daily|floatformat:1 }} kWh</span>
-        </div>
-        <div class="data-row">
-            <span class="label">Monthly Average:</span>
-            <span class="value">{{ power_output.monthly|floatformat:0 }} kWh</span>
-        </div>
-        <div class="data-row">
-            <span class="label">Yearly Total:</span>
-            <span class="value">{{ power_output.yearly|floatformat:0 }} kWh</span>
+        <h2 class="section-title">System Information</h2>
+        <div class="info-grid">
+            <div class="info-label">Energy System Type:</div>
+            <div class="info-value">{{ system_type }}</div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Environmental Impact</h2>
-        <div class="impact-box">
-            <div class="data-row">
-                <span class="label">CO₂ Savings:</span>
-                <span class="value">{{ environmental_impact.co2_saved|floatformat:0 }} kg/year</span>
+        <h2 class="section-title">Weather Profile</h2>
+        <div class="weather-grid">
+            <div class="weather-item">
+                <span class="weather-label">Average Temperature:</span>
+                <span class="weather-value">19.1°C</span>
             </div>
-            <div class="data-row">
-                <span class="label">Equivalent to Trees Planted:</span>
-                <span class="value">{{ environmental_impact.trees_equivalent }} trees</span>
+            <div class="weather-item">
+                <span class="weather-label">Humidity:</span>
+                <span class="weather-value">61.9%</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">Precipitation:</span>
+                <span class="weather-value">5.4 mm/day</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">Wind Speed:</span>
+                <span class="weather-value">7.2 m/s</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">Solar Irradiance:</span>
+                <span class="weather-value">414.9 W/m²</span>
             </div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Recommended Equipment</h2>
-        <ul class="equipment-list">
-            {% for item in recommended_equipment %}
-            <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
+        <h2 class="section-title">Optimal Setup</h2>
+        <div class="info-grid">
+            <div class="info-label">Conversion Rate:</div>
+            <div class="info-value">{{ optimal_setup.conversion_rate|default:"30.0" }}%</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Power Output</h2>
+        <div class="power-output">
+            <div class="power-item">
+                <span class="weather-label">Daily Output:</span>
+                <span class="weather-value">{{ power_output.daily|floatformat:2 }} kWh</span>
+            </div>
+            <div class="power-item">
+                <span class="weather-label">Monthly Output:</span>
+                <span class="weather-value">{{ power_output.monthly|floatformat:2 }} kWh</span>
+            </div>
+            <div class="power-item">
+                <span class="weather-label">Yearly Output:</span>
+                <span class="weather-value">{{ power_output.yearly|floatformat:2 }} kWh</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Environmental Impact</h2>
+        <div class="environmental-impact">
+            <div class="info-grid">
+                <div class="info-label">CO₂ Saved:</div>
+                <div class="info-value">{{ environmental_impact.co2_saved|floatformat:2 }} kg/year</div>
+                
+                <div class="info-label">Equivalent to planting:</div>
+                <div class="info-value">{{ environmental_impact.trees_equivalent }} trees</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Recommended Equipment</h2>
+        <table class="equipment-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recommended_equipment %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>1</td>
+                    <td>{{ item.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <div class="footer">
-        <div class="timestamp">
-            Report generated on: {{ created_at }}
-        </div>
-        <p>Assessment ID: {{ assessment_id }}</p>
+        <div>This report is provided for informational purposes only and should be validated by a professional before making investment decisions.</div>
+        <div class="copyright">© 2025 Renewable Energy Optimizer</div>
     </div>
 </body>
 </html> 
